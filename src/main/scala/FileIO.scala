@@ -22,7 +22,23 @@ object FileIO {
 
   // Pure function to download JSON feed from a URL
   def downloadFeed(url: String): String = {
-    val source = Source.fromURL(url)
-    source.mkString
+      
+      val source = Source.fromURL(url)
+      val json = ujson.read(source.mkString)
+      val posts  = json("data")("children").arr
+
+      val test : List[Post] = posts.toList.map { m => 
+        val subreddit = m("data")("subreddit").str
+        val title = m("data")("title").str
+        val selftext = m("data")("selftext").str
+
+        val formattedDate = m("data")("created_utc").num.toLong //13052004.0
+        val date = TextProcessing.formatDateFromUTC(formattedDate)
+
+        (subreddit, title, selftext, date)
+      }
+      
+    
+    test.toString
   }
 }
