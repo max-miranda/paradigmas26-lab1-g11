@@ -1,6 +1,7 @@
 object Main {
 
   type Subscription = (String, String) // (subName, url)
+  type Post = (String, String, String, String) // (subreddit, title, selftext, formattedDate)
 
   def main(args: Array[String]): Unit = {
     val header = s"Reddit Post Parser\n${"=" * 40}"
