@@ -6,18 +6,18 @@ object FileIO {
 
   // Pure function to read subscriptions from a JSON file
   def readSubscriptions(): List[Main.Subscription] = {
-    implicit val formats = org.json4s.DefaultFormats
+    
+    implicit val formats = org.json4s.DefaultFormats // para indicar los formatos a trabajar
+    
     val source =  Source.fromFile("./subscriptions.json")
     val content = source.mkString
 
-    // data.arr.toList.map hace lo siguiente: primero toma la data que en este caso es un JSON,
-    // arr sirve para asumir que es un array, luego toList lo vuelve una lista para
-    // poder ser mapeado, luego se mapea para acceder correctamente a los elementos de data
     val subs : List[Main.Subscription] = parse(content).children.map { elem =>
-      val name = (elem \ "name").extract[String]
+      val name = (elem \ "name").extract[String] // le indico donde acceder y que tipo extraer
       val url = (elem \ "url").extract[String]
       (name, url)
     }
+    
     source.close()
     subs
   }
