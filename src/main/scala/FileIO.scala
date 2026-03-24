@@ -1,6 +1,10 @@
 import scala.io.Source
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import java.time.Instant           
+import java.time.OffsetDateTime     
+import java.time.ZoneOffset         
+import java.time.format.DateTimeFormatter 
 
 object FileIO {
 
@@ -22,22 +26,26 @@ object FileIO {
     subs
   }
 
-  // Pure function to download JSON feed from a URL
   def downloadFeed(url: String): String = {
-    val source = Source.fromURL(url)
-      // val json = ujson.read(source.mkString)
-      // val posts  = json("data")("children").arr
+    
+    implicit val formats = org.json4s.DefaultFormats //Para poder hacer extract
+    val source = Source.fromURL(url) //Obtengo posts de la url 
+    val posts = source.mkString //Posts los vuelvo strings
+    val jsonObjeto = parse(posts) //Lo hago objeto para indagar en sus campos
+    
+    val ahorasichicos = (jsonObjeto \ "data" \ "children")
 
-      // val test : List[Main.Post] = posts.toList.map { m => 
-      //   val subreddit = m("data")("subreddit").str
-      //   val title = m("data")("title").str
-      //   val selftext = m("data")("selftext").str
+    val out : List[Main.Post] = ahorasichicos.children.map { elem =>
+      val subreddit = (elem \ "data" \ "subreddit").extract[String]
+      val title = (elem \ "data" \ "title").extract[String]
+      val self = (elem \ "data" \ "selftext").extract[String]
+      val createdUtc = (elem \ "data" \ "created_utc").extract[Double].toLong
+      val date = TextProcessing.formatDateFromUTC(createdUtc)
 
-      //   val formattedDate = m("data")("created_utc").num.toLong //13052004.0
-      //   val date = TextProcessing.formatDateFromUTC(formattedDate)
-
-      //   (subreddit, title, selftext, date)
-      // }
-    source.mkString
+      (subreddit, title, self, date)
+      }
+      println(out.mkString)
+      out.mkString
+      
   }
 }
