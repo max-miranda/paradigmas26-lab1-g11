@@ -26,11 +26,12 @@ object FileIO {
     subs
   }
 
-  def downloadFeed(url: String): List[Post]= {
+  def downloadFeed(url: String): List[Main.Post] = {
     
     implicit val formats = org.json4s.DefaultFormats //Para poder hacer extract
     val source = Source.fromURL(url) //Obtengo posts de la url 
     val posts = source.mkString //Posts los vuelvo strings
+    source.close()
     val jsonObjeto = parse(posts) //Lo hago objeto para indagar en sus campos
     
     val ahorasichicos = (jsonObjeto \ "data" \ "children")
@@ -42,9 +43,9 @@ object FileIO {
       val createdUtc = (elem \ "data" \ "created_utc").extract[Double].toLong
       val date = TextProcessing.formatDateFromUTC(createdUtc)
 
-      Post(subreddit, title, self, date)
-      }
-      println(out.mkString)
-      out      
+      (subreddit, title, self, date)
+    }
+
+    out      
   }
 }

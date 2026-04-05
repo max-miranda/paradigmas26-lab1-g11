@@ -4,10 +4,15 @@ import java.time.format.DateTimeFormatter
 object Formatters {
 
   // Pure function to format posts from a subscription
-  def formatSubscription(url: String, posts: String): String = {
+  def formatSubscription(url: String, posts: List[Main.Post]): String = {
     val header = s"\n${"=" * 80}\nPosts from: $url \n${"=" * 80}"
-    val formattedPosts = posts.take(80)
+    val formattedPosts = posts.map(formatPost).mkString("\n\n")
     header + "\n" + formattedPosts
+  }
+
+  private def formatPost(post: Main.Post): String = {
+    val (_, title, selftext, formattedDate) = post
+    s"$title\n$formattedDate\n$selftext"
   }
 }
 

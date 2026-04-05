@@ -8,7 +8,7 @@ object Main {
 
     val subscriptions: List[Subscription] = FileIO.readSubscriptions()
 
-    val allPosts: List[(String, String)] = subscriptions.map { elem =>
+    val allPosts: List[(String, List[Post])] = subscriptions.map { elem =>
       println(s"Fetching posts from: ${elem._1}")
       val posts = FileIO.downloadFeed(elem._2)
       (elem._2, posts)
