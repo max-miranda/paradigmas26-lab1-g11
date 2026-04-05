@@ -6,17 +6,18 @@ object Main {
   def main(args: Array[String]): Unit = {
     val header = s"Reddit Post Parser\n${"=" * 40}"
 
-    val subscriptions: List[Subscription] = FileIO.readSubscriptions()
+    val subscriptionsOpt: Option[List[Subscription]] = FileIO.readSubscriptions()
 
-    val allPosts: List[(String, List[Post])] = subscriptions.map { elem =>
-      println(s"Fetching posts from: ${elem._1}")
-      val posts = FileIO.downloadFeed(elem._2)
-      (elem._2, posts)
+    val allPostsOpt: Option[List[(String, List[Post])]] = subscriptionsOpt.map { subscriptions =>
+      subscriptions.flatMap { elem =>
+        println(s"Fetching posts from: ${elem._1}")
+        FileIO.downloadFeed(elem._2).map(posts => (elem._2, posts)).toList
+      }
     }
 
-    val output = allPosts
-      .map { case (url, posts) => Formatters.formatSubscription(url, posts) }
-      .mkString("\n")
+    val output = allPostsOpt
+      .map(_.map { case (url, posts) => Formatters.formatSubscription(url, posts) }.mkString("\n"))
+      .getOrElse("Could not read subscriptions.")
 
     println(output)
   }
