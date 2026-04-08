@@ -12,7 +12,7 @@ object Formatters {
     ocurr: List[(String, Int)],
   ): String = {
     val header = s"\n${"=" * 80}\nPosts from: $url \n${"=" * 80}"
-    val formattedPosts = posts.map(formatPost).mkString("\n\n")
+    val formattedPosts = posts.take(5).map(formatPost).mkString("\n\n")
     val ocurrFormatted = formatOcurr(ocurr)
     val score = formatScore(ups)
     header + "\n" + formattedPosts + "\n\n" + score + "\n\n" + ocurrFormatted
