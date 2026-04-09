@@ -1,18 +1,38 @@
 import java.time.{Instant, ZoneOffset, OffsetDateTime}
 import java.time.format.DateTimeFormatter
+import os.list
 
 object Formatters {
 
   // Pure function to format posts from a subscription
-  def formatSubscription(url: String, posts: List[Main.Post]): String = {
+  def formatSubscription(
+    url: String, 
+    posts: List[Main.Post], 
+    ups: Int, 
+    ocurr: List[(String, Int)],
+  ): String = {
     val header = s"\n${"=" * 80}\nPosts from: $url \n${"=" * 80}"
     val formattedPosts = posts.map(formatPost).mkString("\n\n")
-    header + "\n" + formattedPosts
+    val ocurrFormatted = formatOcurr(ocurr)
+    val score = formatScore(ups)
+    header + "\n" + formattedPosts + "\n\n" + score + "\n\n" + ocurrFormatted
+  }
+
+  private def formatOcurr(ocurr: List[(String, Int)]): String = {
+    val header = "Words Frequency:"
+    val count = 
+    if (ocurr.isEmpty) "No words to count"
+    else ocurr.map{case (word, count) => s"$word: $count"}.mkString("\n")
+    s"$header\n\n$count"
+  }
+
+  private def formatScore(ups: Int): String = {
+    s"${"=" * 30} Total score of Sub: ${ups} ${"=" * 30}"
   }
 
   private def formatPost(post: Main.Post): String = {
-    val (_, title, selftext, formattedDate) = post
-    s"$title\n$formattedDate\n$selftext"
+    val (_, title, selftext, formattedDate, _, urlPost) = post
+    s"$title\n$formattedDate\n$urlPost\n\n$selftext\n${"=" * 80}"
   }
 }
 
@@ -36,8 +56,7 @@ object Filter {
 }
 
 object Count {
-  def countWords(post: Main.Post): List[(String, Int)] = {
-    val stopwords = Set("the", "about", "above", "after", "again", "against", "all", "am", "an",
+  private val stopwords = Set("the", "about", "above", "after", "again", "against", "all", "am", "an",
     "and", "any", "are", "aren't", "as", "at", "be", "because", "been",
     "before", "being", "below", "between", "both", "but", "by", "can't",
     "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't",
@@ -58,18 +77,50 @@ object Count {
     "who's", "whom", "why", "why's", "with", "won't", "would",
     "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours",
     "yourself", "yourselves")
-    val palabras = post._1.split("\\s+").toList                                        // el texto es un string gigante entonces lo divido por espacio en blanco, tab etc
-    val mayusculas = palabras.filter(item => item.nonEmpty && item.head.isUpper)       // separo las mayusculas
-    val minusculas = mayusculas.map(_.toLowerCase)                                     // las paso a minusculas para poder compararlas con las stopwords
-    val sinStopwords = minusculas.filter (item => !stopwords.contains(item))           // filtro stopwords
-    val agrupadas = sinStopwords.groupBy(item => item).mapValues(_.size)               // agrupo las palabras y determino cuantas veces se repiten
-    val ordenadas = agrupadas.toList.sortBy(item => -item._2)                          // paso de Map a List y orden de mayor ocurrencia a menor  
+  // Extracts word tokens while preserving valid internal separators.
+  private val wordPattern = "[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*".r
 
-    ordenadas
+  private def extractRelevantWords(post: Main.Post): List[String] = {
+    val (_, title, selftext, _, _, _) = post
+    val text = s"$title $selftext"
+    // Normalizes curly apostrophes and non-breaking spaces before tokenization.
+    val normalizedText = text
+      .replace('\u2019', '\'')
+      .replace('\u2018', '\'')
+      .replace('\u00A0', ' ')
 
+    wordPattern
+      .findAllIn(normalizedText)
+      .toList
+      .filter(word => word.nonEmpty && word.head.isUpper)
+      .map(_.toLowerCase)
+      .filter(word => !stopwords.contains(word))
   }
+
+  def countWords(post: Main.Post): List[(String, Int)] =
+    extractRelevantWords(post)
+      .groupBy(word => word)
+      .view
+      .mapValues(_.size)
+      .toList
+      .sortBy { case (_, count) => -count }
+
+  def countWordsBySubreddit(posts: List[Main.Post]): List[(String, Int)] =
+    posts
+      .flatMap(extractRelevantWords)
+      .groupBy(word => word)
+      .view
+      .mapValues(_.size)
+      .toList
+      .sortBy { case (_, count) => -count }
 }
 
+object Score {                                            // sumo un nuevo objeto
+  def countVotes(posts: List[Main.Post]) : Int = {
+    val nums : List[Int] = posts.map { elem => elem._5 }  // guardo en nums una lista de los puntajes 
+    nums.foldLeft(0)((x,y) => x + y )                     // para luego usar foldLeft y sumarlos
+  }
+}
 /* 
 groupBy devuelve Map[String, List[String]], por ejemplo, Map("scala"-> List(scala, scala, scala), "reddit"-> List(reddit, reddit))
 con mapValue(_.size) pasaria a Map("scala" -> 3, "reddit"-> 2)

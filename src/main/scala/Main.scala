@@ -1,7 +1,7 @@
 object Main {
 
   type Subscription = (String, String) // (subName, url)
-  type Post = (String, String, String, String) // (subreddit, title, selftext, formattedDate)
+  type Post = (String, String, String, String, Int, String) // (subreddit, title, selftext, formattedDate, ups, postUrl)
 
   def main(args: Array[String]): Unit = {
     val header = s"Reddit Post Parser\n${"=" * 40}"
@@ -16,9 +16,16 @@ object Main {
     }
 
     val output = allPostsOpt
-      .map(_.map { case (url, posts) => Formatters.formatSubscription(url, posts) }.mkString("\n"))
-      .getOrElse("Could not read subscriptions.")
+      .map(
+        _.map { case (url, posts) => 
+        val filtered = Filter.filterPosts(posts)
+        val ups = Score.countVotes(filtered)
+        val ocurr = Count.countWordsBySubreddit(posts)
+        Formatters.formatSubscription(url, filtered, ups, ocurr) 
+        }.mkString("\n")
+      ).getOrElse("Could not read subscriptions.")
 
     println(output)
+
   }
 }

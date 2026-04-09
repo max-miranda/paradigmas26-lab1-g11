@@ -9,9 +9,10 @@ import java.time.format.DateTimeFormatter
 
 object FileIO {
 
-  // Pure function to read subscriptions from a JSON file
+  private val redditUrl = "https://www.reddit.com" // agrego prefijo para el link final del post
+  
   def readSubscriptions(): Option[List[Main.Subscription]] = {
-    
+
     implicit val formats = org.json4s.DefaultFormats // para indicar los formatos a trabajar
 
     try {
@@ -31,7 +32,7 @@ object FileIO {
     }
   }
 
-  def downloadFeed(url: String): Option[List[Main.Post]] = {
+  def downloadFeed(url: String): (Option[List[Main.Post]])= {
     
     implicit val formats = org.json4s.DefaultFormats //Para poder hacer extract
 
@@ -41,16 +42,18 @@ object FileIO {
           val posts = source.mkString //Posts los vuelvo strings
           val jsonObjeto = parse(posts) //Lo hago objeto para indagar en sus campos
           
-          val postEntries = (jsonObjeto \ "data" \ "children")
+          val postEntries = (jsonObjeto \ "data" \ "children" \ "data")
 
           postEntries.children.map { elem =>
-            val subreddit = (elem \ "data" \ "subreddit").extract[String]
-            val title = (elem \ "data" \ "title").extract[String]
-            val self = (elem \ "data" \ "selftext").extract[String]
-            val createdUtc = (elem \ "data" \ "created_utc").extract[Double].toLong
+            val subreddit = (elem \ "subreddit").extract[String]
+            val title = (elem \ "title").extract[String]
+            val self = (elem \ "selftext").extract[String]
+            val createdUtc = (elem \ "created_utc").extract[Double].toLong
             val date = TextProcessing.formatDateFromUTC(createdUtc)
+            val ups = (elem \ "ups").extract[Int]
+            val postUrl = redditUrl + (elem \ "permalink").extract[String]
 
-            (subreddit, title, self, date)
+            (subreddit, title, self, date, ups, postUrl)
           }
         }
       )
